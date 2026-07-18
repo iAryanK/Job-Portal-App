@@ -27,13 +27,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aryan.jobportalapp.data.remote.dto.AppUserRole
+import com.aryan.jobportalapp.domain.PostAuthDestination
 import com.aryan.jobportalapp.ui.theme.JobPortalAppTheme
 
 @Composable
 fun RoleSelectionScreen(
     modifier: Modifier = Modifier,
     viewModel: RoleSelectionViewModel = viewModel(),
-    onNavigateToHome: () -> Unit = {}
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToEmployerOnboarding: () -> Unit = {},
+    onNavigateToJobSeekerOnboarding: () -> Unit = {}
 ) {
     val uiState = viewModel.uiState
     val context = LocalContext.current
@@ -44,10 +47,15 @@ fun RoleSelectionScreen(
         viewModel.consumeToast()
     }
 
-    LaunchedEffect(uiState.navigateToHome) {
-        if (uiState.navigateToHome) {
-            onNavigateToHome()
-            viewModel.consumeNavigation()
+    LaunchedEffect(uiState.destination) {
+        when (uiState.destination) {
+            PostAuthDestination.EmployerOnboarding -> onNavigateToEmployerOnboarding()
+            PostAuthDestination.JobSeekerOnboarding -> onNavigateToJobSeekerOnboarding()
+            PostAuthDestination.Home -> onNavigateToHome()
+            PostAuthDestination.RoleSelection, null -> Unit
+        }
+        if (uiState.destination != null) {
+            viewModel.consumeDestination()
         }
     }
 

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,7 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aryan.jobportalapp.presentation.auth.AuthDestination
+import com.aryan.jobportalapp.domain.PostAuthDestination
 import com.aryan.jobportalapp.ui.theme.JobPortalAppTheme
 import kotlinx.coroutines.delay
 
@@ -56,6 +55,8 @@ fun AuthScreen(
     onSkip: () -> Unit = {},
     onContinueWithGoogle: () -> Unit = {},
     onNavigateToRoleSelection: () -> Unit = {},
+    onNavigateToEmployerOnboarding: () -> Unit = {},
+    onNavigateToJobSeekerOnboarding: () -> Unit = {},
     onNavigateToHome: () -> Unit = {}
 ) {
     val uiState = viewModel.uiState
@@ -73,8 +74,10 @@ fun AuthScreen(
 
     LaunchedEffect(uiState.destination) {
         when (uiState.destination) {
-            AuthDestination.RoleSelection -> onNavigateToRoleSelection()
-            AuthDestination.Home -> onNavigateToHome()
+            PostAuthDestination.RoleSelection -> onNavigateToRoleSelection()
+            PostAuthDestination.EmployerOnboarding -> onNavigateToEmployerOnboarding()
+            PostAuthDestination.JobSeekerOnboarding -> onNavigateToJobSeekerOnboarding()
+            PostAuthDestination.Home -> onNavigateToHome()
             null -> Unit
         }
         if (uiState.destination != null) {
@@ -90,8 +93,7 @@ fun AuthScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(
             modifier = Modifier

@@ -97,6 +97,29 @@ class AuthRepository(
         }
     }
 
+    suspend fun refreshSession(): Result<AuthResponse> {
+        return try {
+            val response = authApi.refreshToken()
+            if (response.isSuccessful) {
+                val authResponse = response.body()?.data
+                if (authResponse != null) {
+                    authResponse.accessToken?.let(TokenStore::saveAccessToken)
+                    Result.success(authResponse)
+                } else {
+                    Result.failure(IOException("Refresh response was empty"))
+                }
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(
+                    exception.message ?: "Unable to refresh session. Check your connection."
+                )
+            )
+        }
+    }
+
     private fun <T> parseErrorMessage(response: Response<T>): String {
         val errorBody = response.errorBody()?.string()
         if (errorBody.isNullOrBlank()) {

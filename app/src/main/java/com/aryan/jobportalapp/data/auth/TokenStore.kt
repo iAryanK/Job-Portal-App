@@ -19,6 +19,8 @@ object TokenStore {
         return prefs.getString(KEY_ACCESS_TOKEN, null)?.takeIf { it.isNotBlank() }
     }
 
+    fun hasAccessToken(): Boolean = !getAccessToken().isNullOrBlank()
+
     fun saveAccessToken(token: String) {
         prefs.edit().putString(KEY_ACCESS_TOKEN, token).apply()
     }

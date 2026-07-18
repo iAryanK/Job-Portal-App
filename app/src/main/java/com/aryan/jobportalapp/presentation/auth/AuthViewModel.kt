@@ -5,14 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aryan.jobportalapp.data.remote.dto.AppUserRole
 import com.aryan.jobportalapp.data.repository.AuthRepository
+import com.aryan.jobportalapp.domain.PostAuthDestination
+import com.aryan.jobportalapp.domain.PostAuthRouter
 import kotlinx.coroutines.launch
-
-enum class AuthDestination {
-    RoleSelection,
-    Home
-}
 
 data class AuthUiState(
     val isSubmitting: Boolean = false,
@@ -21,11 +17,12 @@ data class AuthUiState(
     val pendingEmail: String = "",
     val toastMessage: String? = null,
     val isToastError: Boolean = false,
-    val destination: AuthDestination? = null
+    val destination: PostAuthDestination? = null
 )
 
 class AuthViewModel(
-    private val authRepository: AuthRepository = AuthRepository()
+    private val authRepository: AuthRepository = AuthRepository(),
+    private val postAuthRouter: PostAuthRouter = PostAuthRouter()
 ) : ViewModel() {
 
     var uiState by mutableStateOf(AuthUiState())
@@ -66,7 +63,7 @@ class AuthViewModel(
 
             authRepository.verifyOtp(email, otp)
                 .onSuccess {
-                    loadCurrentUserAfterVerification()
+                    resolvePostAuthDestination()
                 }
                 .onFailure { error ->
                     uiState = uiState.copy(
@@ -78,14 +75,9 @@ class AuthViewModel(
         }
     }
 
-    private suspend fun loadCurrentUserAfterVerification() {
-        authRepository.getCurrentUser()
-            .onSuccess { user ->
-                val destination = if (user.role == AppUserRole.USER) {
-                    AuthDestination.RoleSelection
-                } else {
-                    AuthDestination.Home
-                }
+    private suspend fun resolvePostAuthDestination() {
+        postAuthRouter.resolveFromCurrentUser()
+            .onSuccess { destination ->
                 uiState = uiState.copy(
                     isVerifying = false,
                     showOtpDialog = false,

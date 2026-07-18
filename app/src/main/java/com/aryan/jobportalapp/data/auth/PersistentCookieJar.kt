@@ -42,6 +42,15 @@ class PersistentCookieJar(context: Context) : CookieJar {
         prefs.edit().clear().apply()
     }
 
+    fun hasCookie(name: String): Boolean {
+        return cookieStore.values.any { cookies ->
+            cookies.any { cookie ->
+                cookie.name == name &&
+                    (cookie.expiresAt < 0 || cookie.expiresAt > System.currentTimeMillis())
+            }
+        }
+    }
+
     private fun persistCookies() {
         val storedCookies = cookieStore.flatMap { (host, cookies) ->
             cookies.map { HostCookie(host, it.toStored()) }

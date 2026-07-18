@@ -62,6 +62,14 @@ object NetworkClient {
         retrofit.create(AuthApi::class.java)
     }
 
+    val employerApi: EmployerApi by lazy {
+        retrofit.create(EmployerApi::class.java)
+    }
+
+    val jobSeekerApi: JobSeekerApi by lazy {
+        retrofit.create(JobSeekerApi::class.java)
+    }
+
     fun init(context: Context) {
         appContext = context.applicationContext
         TokenStore.init(context)
@@ -69,6 +77,15 @@ object NetworkClient {
         okHttpClient
         retrofit
         authApi
+        employerApi
+        jobSeekerApi
+    }
+
+    fun hasRefreshCookie(): Boolean = cookieJar.hasCookie("refreshToken")
+
+    fun clearSession() {
+        TokenStore.clear()
+        cookieJar.clear()
     }
 
     private fun requireContext(): Context {
