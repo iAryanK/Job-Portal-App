@@ -70,6 +70,10 @@ object NetworkClient {
         retrofit.create(JobSeekerApi::class.java)
     }
 
+    val jobApi: JobApi by lazy {
+        retrofit.create(JobApi::class.java)
+    }
+
     fun init(context: Context) {
         appContext = context.applicationContext
         TokenStore.init(context)
@@ -79,6 +83,7 @@ object NetworkClient {
         authApi
         employerApi
         jobSeekerApi
+        jobApi
     }
 
     fun hasRefreshCookie(): Boolean = cookieJar.hasCookie("refreshToken")

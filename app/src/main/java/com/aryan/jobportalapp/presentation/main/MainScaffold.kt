@@ -65,6 +65,8 @@ import coil.compose.AsyncImage
 import com.aryan.jobportalapp.R
 import com.aryan.jobportalapp.data.remote.NetworkClient
 import com.aryan.jobportalapp.data.remote.dto.AppUserRole
+import com.aryan.jobportalapp.presentation.employer.EmployerHomeScreen
+import com.aryan.jobportalapp.presentation.employer.EmployerMyJobsScreen
 import com.aryan.jobportalapp.presentation.employer.EmployerProfileScreen
 import com.aryan.jobportalapp.presentation.home.HomeScreen
 import com.aryan.jobportalapp.presentation.jobseeker.JobSeekerProfileScreen
@@ -105,7 +107,9 @@ fun MainScaffold(
     onProfileOpened: () -> Unit = {},
     onLogout: () -> Unit = {},
     onEditEmployer: () -> Unit = {},
-    onEditJobSeeker: () -> Unit = {}
+    onEditJobSeeker: () -> Unit = {},
+    onCreateJob: () -> Unit = {},
+    onJobClick: (String) -> Unit = {}
 ) {
     val uiState = viewModel.uiState
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -268,12 +272,21 @@ fun MainScaffold(
                     .padding(innerPadding)
             ) {
                 when (selectedTab) {
-                    MainTab.Home -> HomeScreen()
+                    MainTab.Home -> {
+                        if (uiState.user?.role == AppUserRole.EMPLOYER) {
+                            EmployerHomeScreen(onPostJobClick = onCreateJob)
+                        } else {
+                            HomeScreen()
+                        }
+                    }
                     MainTab.Jobs -> PublicJobsScreen()
                     MainTab.Applied -> PlaceholderTab(title = "Applied")
                     MainTab.TalentPool -> PlaceholderTab(title = "Talent Pool")
                     MainTab.Recruit -> PlaceholderTab(title = "Recruit")
-                    MainTab.MyJobs -> PlaceholderTab(title = "My Jobs")
+                    MainTab.MyJobs -> EmployerMyJobsScreen(
+                        onPostJobClick = onCreateJob,
+                        onJobClick = onJobClick
+                    )
                     MainTab.Profile -> {
                         if (uiState.user?.role == AppUserRole.EMPLOYER) {
                             EmployerProfileScreen(onEditClick = onEditEmployer)

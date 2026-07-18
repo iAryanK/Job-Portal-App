@@ -14,16 +14,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.aryan.jobportalapp.data.auth.TokenStore
 import com.aryan.jobportalapp.data.remote.NetworkClient
 import com.aryan.jobportalapp.data.repository.AuthRepository
 import com.aryan.jobportalapp.domain.PostAuthDestination
 import com.aryan.jobportalapp.domain.PostAuthRouter
 import com.aryan.jobportalapp.presentation.auth.AuthScreen
+import com.aryan.jobportalapp.presentation.employer.CreateEditJobScreen
 import com.aryan.jobportalapp.presentation.employer.EditEmployerScreen
 import com.aryan.jobportalapp.presentation.jobseeker.EditJobSeekerScreen
+import com.aryan.jobportalapp.presentation.jobs.JobDetailScreen
 import com.aryan.jobportalapp.presentation.jobs.PublicJobsScreen
 import com.aryan.jobportalapp.presentation.main.MainScaffold
 import com.aryan.jobportalapp.presentation.onboard.WelcomeScreen
@@ -155,7 +159,51 @@ fun AppNavGraph(
                 },
                 onEditJobSeeker = {
                     navController.navigate(AppRoute.EditJobSeeker.route)
+                },
+                onCreateJob = {
+                    navController.navigate(AppRoute.CreateJob.route)
+                },
+                onJobClick = { jobId ->
+                    navController.navigate(AppRoute.JobDetail.createRoute(jobId))
                 }
+            )
+        }
+
+        composable(route = AppRoute.CreateJob.route) {
+            CreateEditJobScreen(
+                jobId = null,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = AppRoute.JobDetail.route,
+            arguments = listOf(
+                navArgument("jobId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val jobId = backStackEntry.arguments?.getString("jobId").orEmpty()
+            JobDetailScreen(
+                jobId = jobId,
+                onBack = { navController.popBackStack() },
+                onEditClick = { id ->
+                    navController.navigate(AppRoute.EditJob.createRoute(id))
+                },
+                showCompany = false,
+                showStatus = true
+            )
+        }
+
+        composable(
+            route = AppRoute.EditJob.route,
+            arguments = listOf(
+                navArgument("jobId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val jobId = backStackEntry.arguments?.getString("jobId")
+            CreateEditJobScreen(
+                jobId = jobId,
+                onBack = { navController.popBackStack() }
             )
         }
 

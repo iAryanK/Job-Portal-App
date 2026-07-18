@@ -9,5 +9,12 @@ sealed class AppRoute(val route: String) {
     data object Home : AppRoute("home")
     data object EditEmployer : AppRoute("edit_employer")
     data object EditJobSeeker : AppRoute("edit_jobseeker")
+    data object CreateJob : AppRoute("create_job")
+    data object EditJob : AppRoute("edit_job/{jobId}") {
+        fun createRoute(jobId: String) = "edit_job/$jobId"
+    }
+    data object JobDetail : AppRoute("job_detail/{jobId}") {
+        fun createRoute(jobId: String) = "job_detail/$jobId"
+    }
     data object PublicJobs : AppRoute("public_jobs")
 }
