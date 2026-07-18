@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,12 +22,16 @@ import com.aryan.jobportalapp.data.repository.AuthRepository
 import com.aryan.jobportalapp.domain.PostAuthDestination
 import com.aryan.jobportalapp.domain.PostAuthRouter
 import com.aryan.jobportalapp.presentation.auth.AuthScreen
+import com.aryan.jobportalapp.presentation.employer.EditEmployerScreen
+import com.aryan.jobportalapp.presentation.jobseeker.EditJobSeekerScreen
 import com.aryan.jobportalapp.presentation.jobs.PublicJobsScreen
 import com.aryan.jobportalapp.presentation.main.MainScaffold
 import com.aryan.jobportalapp.presentation.onboard.WelcomeScreen
 import com.aryan.jobportalapp.presentation.onboarding.EmployerOnboardingScreen
 import com.aryan.jobportalapp.presentation.onboarding.JobSeekerOnboardingScreen
 import com.aryan.jobportalapp.presentation.role.RoleSelectionScreen
+
+private const val KEY_OPEN_PROFILE = "open_profile"
 
 private fun PostAuthDestination.toRoute(): String = when (this) {
     PostAuthDestination.RoleSelection -> AppRoute.RoleSelection.route
@@ -129,10 +135,57 @@ fun AppNavGraph(
         }
 
         composable(route = AppRoute.Home.route) {
+            val openProfile by navController.currentBackStackEntry!!
+                .savedStateHandle
+                .getStateFlow(KEY_OPEN_PROFILE, false)
+                .collectAsState()
+
             MainScaffold(
+                openProfile = openProfile,
+                onProfileOpened = {
+                    navController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(KEY_OPEN_PROFILE, false)
+                },
                 onLogout = {
                     navigateAsRoot(AppRoute.Welcome.route)
+                },
+                onEditEmployer = {
+                    navController.navigate(AppRoute.EditEmployer.route)
+                },
+                onEditJobSeeker = {
+                    navController.navigate(AppRoute.EditJobSeeker.route)
                 }
+            )
+        }
+
+        composable(route = AppRoute.EditEmployer.route) {
+            DisposableEffect(Unit) {
+                onDispose {
+                    runCatching {
+                        navController.getBackStackEntry(AppRoute.Home.route)
+                            .savedStateHandle
+                            .set(KEY_OPEN_PROFILE, true)
+                    }
+                }
+            }
+            EditEmployerScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = AppRoute.EditJobSeeker.route) {
+            DisposableEffect(Unit) {
+                onDispose {
+                    runCatching {
+                        navController.getBackStackEntry(AppRoute.Home.route)
+                            .savedStateHandle
+                            .set(KEY_OPEN_PROFILE, true)
+                    }
+                }
+            }
+            EditJobSeekerScreen(
+                onBack = { navController.popBackStack() }
             )
         }
 

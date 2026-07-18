@@ -23,7 +23,9 @@ data class EmployerResponse(
     val country: String? = null,
     val pinCode: String? = null,
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+    val verified: Boolean? = null,
+    val verificationStatus: String? = null
 )
 
 data class CreateEmployerRequest(

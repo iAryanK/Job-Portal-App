@@ -1,13 +1,11 @@
 package com.aryan.jobportalapp.presentation.main
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -19,15 +17,15 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PersonSearch
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material.icons.outlined.WorkOutline
-import androidx.compose.material.icons.filled.PersonSearch
-import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,7 +65,9 @@ import coil.compose.AsyncImage
 import com.aryan.jobportalapp.R
 import com.aryan.jobportalapp.data.remote.NetworkClient
 import com.aryan.jobportalapp.data.remote.dto.AppUserRole
+import com.aryan.jobportalapp.presentation.employer.EmployerProfileScreen
 import com.aryan.jobportalapp.presentation.home.HomeScreen
+import com.aryan.jobportalapp.presentation.jobseeker.JobSeekerProfileScreen
 import com.aryan.jobportalapp.presentation.jobs.PublicJobsScreen
 import kotlinx.coroutines.launch
 
@@ -101,7 +101,11 @@ private fun tabsForRole(role: AppUserRole?): List<MainTab> = when (role) {
 fun MainScaffold(
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = viewModel(),
-    onLogout: () -> Unit = {}
+    openProfile: Boolean = false,
+    onProfileOpened: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    onEditEmployer: () -> Unit = {},
+    onEditJobSeeker: () -> Unit = {}
 ) {
     val uiState = viewModel.uiState
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -109,8 +113,16 @@ fun MainScaffold(
     val tabs = remember(uiState.user?.role) { tabsForRole(uiState.user?.role) }
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Home) }
 
+    LaunchedEffect(openProfile) {
+        if (openProfile) {
+            selectedTab = MainTab.Profile
+            onProfileOpened()
+        }
+    }
+
     LaunchedEffect(tabs) {
-        if (selectedTab !in tabs) {
+        // Profile can be opened from the top-bar avatar even when it is not a bottom tab.
+        if (selectedTab != MainTab.Profile && selectedTab !in tabs) {
             selectedTab = MainTab.Home
         }
     }
@@ -262,12 +274,13 @@ fun MainScaffold(
                     MainTab.TalentPool -> PlaceholderTab(title = "Talent Pool")
                     MainTab.Recruit -> PlaceholderTab(title = "Recruit")
                     MainTab.MyJobs -> PlaceholderTab(title = "My Jobs")
-                    MainTab.Profile -> ProfileTab(
-                        name = uiState.user?.name,
-                        email = uiState.user?.email,
-                        photoUrl = uiState.user?.profilePhoto,
-                        role = uiState.user?.role?.name
-                    )
+                    MainTab.Profile -> {
+                        if (uiState.user?.role == AppUserRole.EMPLOYER) {
+                            EmployerProfileScreen(onEditClick = onEditEmployer)
+                        } else {
+                            JobSeekerProfileScreen(onEditClick = onEditJobSeeker)
+                        }
+                    }
                 }
             }
         }
@@ -286,62 +299,6 @@ private fun PlaceholderTab(title: String) {
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
-    }
-}
-
-@Composable
-private fun ProfileTab(
-    name: String?,
-    email: String?,
-    photoUrl: String?,
-    role: String?
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        if (!photoUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = photoUrl,
-                contentDescription = "Profile photo",
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.size(96.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = name?.takeIf { it.isNotBlank() } ?: "Profile",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        if (!email.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = email,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (!role.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = role,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
     }
 }
 
