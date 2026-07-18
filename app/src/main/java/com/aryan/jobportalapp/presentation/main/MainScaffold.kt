@@ -13,15 +13,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Work
-import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.PersonSearch
 import androidx.compose.material.icons.outlined.Work
+import androidx.compose.material.icons.outlined.WorkOutline
+import androidx.compose.material.icons.filled.PersonSearch
+import androidx.compose.material.icons.filled.WorkOutline
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -39,14 +46,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +66,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.aryan.jobportalapp.R
 import com.aryan.jobportalapp.data.remote.NetworkClient
+import com.aryan.jobportalapp.data.remote.dto.AppUserRole
 import com.aryan.jobportalapp.presentation.home.HomeScreen
 import com.aryan.jobportalapp.presentation.jobs.PublicJobsScreen
 import kotlinx.coroutines.launch
@@ -64,7 +75,25 @@ enum class MainTab(val label: String) {
     Home("Home"),
     Jobs("Jobs"),
     Applied("Applied"),
+    TalentPool("Talent Pool"),
+    Recruit("Recruit"),
+    MyJobs("My Jobs"),
     Profile("Profile")
+}
+
+private fun tabsForRole(role: AppUserRole?): List<MainTab> = when (role) {
+    AppUserRole.EMPLOYER -> listOf(
+        MainTab.Home,
+        MainTab.TalentPool,
+        MainTab.Recruit,
+        MainTab.MyJobs
+    )
+    else -> listOf(
+        MainTab.Home,
+        MainTab.Jobs,
+        MainTab.Applied,
+        MainTab.Profile
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,7 +106,24 @@ fun MainScaffold(
     val uiState = viewModel.uiState
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val tabs = remember(uiState.user?.role) { tabsForRole(uiState.user?.role) }
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Home) }
+
+    LaunchedEffect(tabs) {
+        if (selectedTab !in tabs) {
+            selectedTab = MainTab.Home
+        }
+    }
+
+    if (uiState.isLoadingUser && uiState.user == null) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -93,7 +139,7 @@ fun MainScaffold(
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(24.dp)
                     )
-                    MainTab.entries.forEach { tab ->
+                    tabs.forEach { tab ->
                         NavigationDrawerItem(
                             label = { Text(text = tab.label) },
                             selected = selectedTab == tab,
@@ -188,7 +234,7 @@ fun MainScaffold(
             },
             bottomBar = {
                 NavigationBar {
-                    MainTab.entries.forEach { tab ->
+                    tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = selectedTab == tab,
                             onClick = { selectedTab = tab },
@@ -213,6 +259,9 @@ fun MainScaffold(
                     MainTab.Home -> HomeScreen()
                     MainTab.Jobs -> PublicJobsScreen()
                     MainTab.Applied -> PlaceholderTab(title = "Applied")
+                    MainTab.TalentPool -> PlaceholderTab(title = "Talent Pool")
+                    MainTab.Recruit -> PlaceholderTab(title = "Recruit")
+                    MainTab.MyJobs -> PlaceholderTab(title = "My Jobs")
                     MainTab.Profile -> ProfileTab(
                         name = uiState.user?.name,
                         email = uiState.user?.email,
@@ -296,9 +345,12 @@ private fun ProfileTab(
     }
 }
 
-private fun tabIcon(tab: MainTab, selected: Boolean) = when (tab) {
+private fun tabIcon(tab: MainTab, selected: Boolean): ImageVector = when (tab) {
     MainTab.Home -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
     MainTab.Jobs -> if (selected) Icons.Filled.Work else Icons.Outlined.Work
     MainTab.Applied -> Icons.AutoMirrored.Outlined.Assignment
+    MainTab.TalentPool -> if (selected) Icons.Filled.People else Icons.Outlined.People
+    MainTab.Recruit -> if (selected) Icons.Filled.PersonSearch else Icons.Outlined.PersonSearch
+    MainTab.MyJobs -> if (selected) Icons.Filled.WorkOutline else Icons.Outlined.WorkOutline
     MainTab.Profile -> if (selected) Icons.Filled.Person else Icons.Outlined.Person
 }
