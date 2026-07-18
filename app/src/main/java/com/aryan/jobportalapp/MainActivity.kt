@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import com.aryan.jobportalapp.data.remote.NetworkClient
 import com.aryan.jobportalapp.navigation.AppNavGraph
 import com.aryan.jobportalapp.ui.theme.JobPortalAppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        NetworkClient.init(applicationContext)
         enableEdgeToEdge()
         setContent {
             JobPortalAppTheme {
