@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.aryan.jobportalapp.presentation.auth.AuthScreen
+import com.aryan.jobportalapp.presentation.jobs.PublicJobsScreen
 import com.aryan.jobportalapp.presentation.onboard.WelcomeScreen
 
 @Composable
@@ -33,7 +34,22 @@ fun AppNavGraph(
         }
 
         composable(route = AppRoute.Auth.route) {
-            AuthScreen()
+            AuthScreen(
+                onSkip = {
+                    navController.navigate(AppRoute.PublicJobs.route) {
+                        launchSingleTop = true
+                    }
+                },
+                onAuthSuccess = {
+                    navController.navigate(AppRoute.PublicJobs.route) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(route = AppRoute.PublicJobs.route) {
+            PublicJobsScreen()
         }
     }
 }
