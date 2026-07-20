@@ -18,4 +18,12 @@ interface RecruitmentApi {
     suspend fun getInvitationsOfJob(
         @Path("jobId") jobId: String
     ): Response<ApiResponse<List<InvitationResponse>>>
+
+    @GET("jobs/application/jobseeker/{jobSeekerId}")
+    suspend fun getApplicationsOfJobSeeker(
+        @Path("jobSeekerId") jobSeekerId: String
+    ): Response<ApiResponse<List<ApplicationResponse>>>
+
+    @GET("jobs/invitation")
+    suspend fun getInvitationsOfJobSeeker(): Response<ApiResponse<List<InvitationResponse>>>
 }

@@ -71,6 +71,7 @@ import com.aryan.jobportalapp.presentation.employer.EmployerProfileScreen
 import com.aryan.jobportalapp.presentation.employer.RecruitScreen
 import com.aryan.jobportalapp.presentation.employer.TalentPoolScreen
 import com.aryan.jobportalapp.presentation.home.HomeScreen
+import com.aryan.jobportalapp.presentation.jobseeker.ActivitiesScreen
 import com.aryan.jobportalapp.presentation.jobseeker.JobSeekerProfileScreen
 import com.aryan.jobportalapp.presentation.jobs.PublicJobsScreen
 import kotlinx.coroutines.launch
@@ -78,7 +79,7 @@ import kotlinx.coroutines.launch
 enum class MainTab(val label: String) {
     Home("Home"),
     Jobs("Jobs"),
-    Applied("Applied"),
+    Activities("Activities"),
     TalentPool("Talent Pool"),
     Recruit("Recruit"),
     MyJobs("My Jobs"),
@@ -95,7 +96,7 @@ private fun tabsForRole(role: AppUserRole?): List<MainTab> = when (role) {
     else -> listOf(
         MainTab.Home,
         MainTab.Jobs,
-        MainTab.Applied,
+        MainTab.Activities,
         MainTab.Profile
     )
 }
@@ -283,7 +284,7 @@ fun MainScaffold(
                         }
                     }
                     MainTab.Jobs -> PublicJobsScreen(onJobClick = onJobClick)
-                    MainTab.Applied -> PlaceholderTab(title = "Applied")
+                    MainTab.Activities -> ActivitiesScreen(onJobClick = onJobClick)
                     MainTab.TalentPool -> TalentPoolScreen(
                         onJobSeekerClick = onJobSeekerClick
                     )
@@ -326,7 +327,7 @@ private fun PlaceholderTab(title: String) {
 private fun tabIcon(tab: MainTab, selected: Boolean): ImageVector = when (tab) {
     MainTab.Home -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
     MainTab.Jobs -> if (selected) Icons.Filled.Work else Icons.Outlined.Work
-    MainTab.Applied -> Icons.AutoMirrored.Outlined.Assignment
+    MainTab.Activities -> Icons.AutoMirrored.Outlined.Assignment
     MainTab.TalentPool -> if (selected) Icons.Filled.People else Icons.Outlined.People
     MainTab.Recruit -> if (selected) Icons.Filled.PersonSearch else Icons.Outlined.PersonSearch
     MainTab.MyJobs -> if (selected) Icons.Filled.WorkOutline else Icons.Outlined.WorkOutline

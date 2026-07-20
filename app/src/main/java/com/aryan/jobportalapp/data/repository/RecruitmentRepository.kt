@@ -5,6 +5,8 @@ import com.aryan.jobportalapp.data.remote.RecruitmentApi
 import com.aryan.jobportalapp.data.remote.dto.ApiResponse
 import com.aryan.jobportalapp.data.remote.dto.ApplicationResponse
 import com.aryan.jobportalapp.data.remote.dto.InvitationResponse
+import com.aryan.jobportalapp.data.remote.dto.JobSeekerApplicationItem
+import com.aryan.jobportalapp.data.remote.dto.JobSeekerInvitationItem
 import com.aryan.jobportalapp.data.remote.dto.RecruitApplicationItem
 import com.aryan.jobportalapp.data.remote.dto.RecruitInvitationItem
 import com.google.gson.reflect.TypeToken
@@ -61,6 +63,43 @@ class RecruitmentRepository(
 
     suspend fun getEmployerInvitations(): Result<List<RecruitInvitationItem>> {
         return fetchForEmployerJobs(::fetchInvitationsForJob)
+    }
+
+    suspend fun getJobSeekerApplications(): Result<List<JobSeekerApplicationItem>> {
+        return try {
+            val jobSeekerId = authRepository.getCurrentUser().getOrNull()?.id
+            if (jobSeekerId.isNullOrBlank()) {
+                return Result.failure(IOException("Unable to load job seeker profile"))
+            }
+
+            val response = recruitmentApi.getApplicationsOfJobSeeker(jobSeekerId)
+            if (response.isSuccessful) {
+                val items = response.body()?.data.orEmpty().mapNotNull { it.toJobSeekerApplicationItem() }
+                Result.success(items)
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(exception.message ?: "Unable to load applications")
+            )
+        }
+    }
+
+    suspend fun getJobSeekerInvitations(): Result<List<JobSeekerInvitationItem>> {
+        return try {
+            val response = recruitmentApi.getInvitationsOfJobSeeker()
+            if (response.isSuccessful) {
+                val items = response.body()?.data.orEmpty().mapNotNull { it.toJobSeekerInvitationItem() }
+                Result.success(items)
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(exception.message ?: "Unable to load invitations")
+            )
+        }
     }
 
     private suspend fun <T> fetchForEmployerJobs(
@@ -158,6 +197,33 @@ class RecruitmentRepository(
             specialization = seeker.specialization,
             status = status,
             expiresAt = expiresAt
+        )
+    }
+
+    private fun ApplicationResponse.toJobSeekerApplicationItem(): JobSeekerApplicationItem? {
+        val applicationId = id?.takeIf { it.isNotBlank() } ?: return null
+        val jobSummary = job?.takeIf { !it.id.isNullOrBlank() } ?: return null
+        val applicationStatus = status ?: return null
+
+        return JobSeekerApplicationItem(
+            applicationId = applicationId,
+            status = applicationStatus,
+            message = message,
+            job = jobSummary
+        )
+    }
+
+    private fun InvitationResponse.toJobSeekerInvitationItem(): JobSeekerInvitationItem? {
+        val invitationId = id?.takeIf { it.isNotBlank() } ?: return null
+        val jobSummary = job?.takeIf { !it.id.isNullOrBlank() } ?: return null
+        val invitationStatus = status ?: return null
+
+        return JobSeekerInvitationItem(
+            invitationId = invitationId,
+            status = invitationStatus,
+            expiresAt = expiresAt,
+            respondedAt = respondedAt,
+            job = jobSummary
         )
     }
 
