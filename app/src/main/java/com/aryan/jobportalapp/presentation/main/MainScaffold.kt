@@ -68,6 +68,7 @@ import com.aryan.jobportalapp.data.remote.dto.AppUserRole
 import com.aryan.jobportalapp.presentation.employer.EmployerHomeScreen
 import com.aryan.jobportalapp.presentation.employer.EmployerMyJobsScreen
 import com.aryan.jobportalapp.presentation.employer.EmployerProfileScreen
+import com.aryan.jobportalapp.presentation.employer.TalentPoolScreen
 import com.aryan.jobportalapp.presentation.home.HomeScreen
 import com.aryan.jobportalapp.presentation.jobseeker.JobSeekerProfileScreen
 import com.aryan.jobportalapp.presentation.jobs.PublicJobsScreen
@@ -109,7 +110,8 @@ fun MainScaffold(
     onEditEmployer: () -> Unit = {},
     onEditJobSeeker: () -> Unit = {},
     onCreateJob: () -> Unit = {},
-    onJobClick: (String) -> Unit = {}
+    onJobClick: (String) -> Unit = {},
+    onJobSeekerClick: (String) -> Unit = {}
 ) {
     val uiState = viewModel.uiState
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -281,7 +283,9 @@ fun MainScaffold(
                     }
                     MainTab.Jobs -> PublicJobsScreen()
                     MainTab.Applied -> PlaceholderTab(title = "Applied")
-                    MainTab.TalentPool -> PlaceholderTab(title = "Talent Pool")
+                    MainTab.TalentPool -> TalentPoolScreen(
+                        onJobSeekerClick = onJobSeekerClick
+                    )
                     MainTab.Recruit -> PlaceholderTab(title = "Recruit")
                     MainTab.MyJobs -> EmployerMyJobsScreen(
                         onPostJobClick = onCreateJob,

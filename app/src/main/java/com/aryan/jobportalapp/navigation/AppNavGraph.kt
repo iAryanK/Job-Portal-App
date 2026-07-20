@@ -26,6 +26,7 @@ import com.aryan.jobportalapp.domain.PostAuthRouter
 import com.aryan.jobportalapp.presentation.auth.AuthScreen
 import com.aryan.jobportalapp.presentation.employer.CreateEditJobScreen
 import com.aryan.jobportalapp.presentation.employer.EditEmployerScreen
+import com.aryan.jobportalapp.presentation.employer.JobSeekerDetailScreen
 import com.aryan.jobportalapp.presentation.jobseeker.EditJobSeekerScreen
 import com.aryan.jobportalapp.presentation.jobs.JobDetailScreen
 import com.aryan.jobportalapp.presentation.jobs.PublicJobsScreen
@@ -165,6 +166,9 @@ fun AppNavGraph(
                 },
                 onJobClick = { jobId ->
                     navController.navigate(AppRoute.JobDetail.createRoute(jobId))
+                },
+                onJobSeekerClick = { jobSeekerId ->
+                    navController.navigate(AppRoute.JobSeekerDetail.createRoute(jobSeekerId))
                 }
             )
         }
@@ -191,6 +195,19 @@ fun AppNavGraph(
                 },
                 showCompany = false,
                 showStatus = true
+            )
+        }
+
+        composable(
+            route = AppRoute.JobSeekerDetail.route,
+            arguments = listOf(
+                navArgument("jobSeekerId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val jobSeekerId = backStackEntry.arguments?.getString("jobSeekerId").orEmpty()
+            JobSeekerDetailScreen(
+                jobSeekerId = jobSeekerId,
+                onBack = { navController.popBackStack() }
             )
         }
 

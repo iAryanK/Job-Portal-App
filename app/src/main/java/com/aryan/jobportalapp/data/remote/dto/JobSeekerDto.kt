@@ -6,6 +6,47 @@ enum class Gender {
     OTHER
 }
 
+data class JobSeekerSummaryResponse(
+    val id: String? = null,
+    val name: String? = null,
+    val gender: Gender? = null,
+    val headline: String? = null,
+    val summary: String? = null,
+    val highestQualification: String? = null,
+    val specialization: String? = null,
+    val experienceYears: Int? = null,
+    val experienceMonths: Int? = null,
+    val currentCompany: String? = null,
+    val currentDesignation: String? = null,
+    val expectedCTC: String? = null,
+    val currentlyWorking: Boolean? = null,
+    val willingToRelocate: Boolean? = null,
+    val openToRemote: Boolean? = null,
+    val preferredJobLocation: String? = null,
+    val city: String? = null,
+    val state: String? = null,
+    val country: String? = null,
+    val resumeUrl: String? = null,
+    val portfolioUrl: String? = null
+)
+
+data class FindJobSeekersFilter(
+    val search: String? = null,
+    val gender: Gender? = null,
+    val city: String? = null,
+    val district: String? = null,
+    val state: String? = null,
+    val country: String? = null,
+    val minExperienceYears: Int? = null,
+    val maxExperienceYears: Int? = null,
+    val currentlyWorking: Boolean? = null,
+    val willingToRelocate: Boolean? = null,
+    val openToRemote: Boolean? = null,
+    val preferredJobLocation: String? = null,
+    val highestQualification: String? = null,
+    val specialization: String? = null
+)
+
 data class JobSeekerResponse(
     val id: String? = null,
     val name: String? = null,

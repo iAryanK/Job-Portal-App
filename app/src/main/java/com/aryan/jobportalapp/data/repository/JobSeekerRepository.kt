@@ -4,7 +4,9 @@ import com.aryan.jobportalapp.data.remote.JobSeekerApi
 import com.aryan.jobportalapp.data.remote.NetworkClient
 import com.aryan.jobportalapp.data.remote.dto.ApiResponse
 import com.aryan.jobportalapp.data.remote.dto.CreateJobSeekerRequest
+import com.aryan.jobportalapp.data.remote.dto.FindJobSeekersFilter
 import com.aryan.jobportalapp.data.remote.dto.JobSeekerResponse
+import com.aryan.jobportalapp.data.remote.dto.JobSeekerSummaryResponse
 import com.aryan.jobportalapp.data.remote.dto.PatchJobSeekerRequest
 import com.google.gson.reflect.TypeToken
 import retrofit2.Response
@@ -13,6 +15,50 @@ import java.io.IOException
 class JobSeekerRepository(
     private val jobSeekerApi: JobSeekerApi = NetworkClient.jobSeekerApi
 ) {
+
+    suspend fun findJobSeekers(
+        filter: FindJobSeekersFilter = FindJobSeekersFilter(),
+        page: Int = 0,
+        size: Int = PAGE_SIZE
+    ): Result<PagedJobSeekersResult> {
+        return try {
+            val response = jobSeekerApi.findJobSeekers(
+                search = filter.search?.takeIf { it.isNotBlank() },
+                gender = filter.gender,
+                city = filter.city?.takeIf { it.isNotBlank() },
+                district = filter.district?.takeIf { it.isNotBlank() },
+                state = filter.state?.takeIf { it.isNotBlank() },
+                country = filter.country?.takeIf { it.isNotBlank() },
+                minExperienceYears = filter.minExperienceYears,
+                maxExperienceYears = filter.maxExperienceYears,
+                currentlyWorking = filter.currentlyWorking,
+                willingToRelocate = filter.willingToRelocate,
+                openToRemote = filter.openToRemote,
+                preferredJobLocation = filter.preferredJobLocation?.takeIf { it.isNotBlank() },
+                highestQualification = filter.highestQualification?.takeIf { it.isNotBlank() },
+                specialization = filter.specialization?.takeIf { it.isNotBlank() },
+                page = page,
+                size = size
+            )
+            if (response.isSuccessful) {
+                val pageData = response.body()?.data
+                Result.success(
+                    PagedJobSeekersResult(
+                        items = pageData?.content.orEmpty(),
+                        page = pageData?.number ?: page,
+                        isLastPage = pageData?.last ?: true,
+                        totalElements = pageData?.totalElements ?: 0
+                    )
+                )
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(exception.message ?: "Unable to fetch job seekers.")
+            )
+        }
+    }
 
     suspend fun getJobSeekerById(id: String): Result<JobSeekerResponse> {
         return try {
@@ -93,3 +139,12 @@ class JobSeekerRepository(
         }
     }
 }
+
+data class PagedJobSeekersResult(
+    val items: List<JobSeekerSummaryResponse>,
+    val page: Int,
+    val isLastPage: Boolean,
+    val totalElements: Long
+)
+
+private const val PAGE_SIZE = 20

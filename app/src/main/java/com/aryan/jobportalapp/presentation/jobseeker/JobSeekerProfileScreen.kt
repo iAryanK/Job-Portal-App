@@ -126,7 +126,7 @@ fun JobSeekerProfileScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun JobSeekerProfileContent(
+fun JobSeekerProfileContent(
     jobSeeker: JobSeekerResponse,
     modifier: Modifier = Modifier,
     profilePhotoUrl: String? = null,
