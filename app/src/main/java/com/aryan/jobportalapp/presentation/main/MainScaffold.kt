@@ -68,6 +68,7 @@ import com.aryan.jobportalapp.data.remote.dto.AppUserRole
 import com.aryan.jobportalapp.presentation.employer.EmployerHomeScreen
 import com.aryan.jobportalapp.presentation.employer.EmployerMyJobsScreen
 import com.aryan.jobportalapp.presentation.employer.EmployerProfileScreen
+import com.aryan.jobportalapp.presentation.employer.RecruitScreen
 import com.aryan.jobportalapp.presentation.employer.TalentPoolScreen
 import com.aryan.jobportalapp.presentation.home.HomeScreen
 import com.aryan.jobportalapp.presentation.jobseeker.JobSeekerProfileScreen
@@ -286,7 +287,10 @@ fun MainScaffold(
                     MainTab.TalentPool -> TalentPoolScreen(
                         onJobSeekerClick = onJobSeekerClick
                     )
-                    MainTab.Recruit -> PlaceholderTab(title = "Recruit")
+                    MainTab.Recruit -> RecruitScreen(
+                        onJobSeekerClick = onJobSeekerClick,
+                        onJobClick = onJobClick
+                    )
                     MainTab.MyJobs -> EmployerMyJobsScreen(
                         onPostJobClick = onCreateJob,
                         onJobClick = onJobClick
