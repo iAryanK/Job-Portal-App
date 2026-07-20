@@ -69,6 +69,7 @@ data class TalentPoolUiState(
     val totalElements: Long = 0,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
+    val isReloadingList: Boolean = false,
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = true,
     val hasLoadedOnce: Boolean = false,

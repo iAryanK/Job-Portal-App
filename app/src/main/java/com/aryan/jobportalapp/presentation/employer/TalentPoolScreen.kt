@@ -104,7 +104,7 @@ fun TalentPoolScreen(
     Box(modifier = modifier.fillMaxSize()) {
         PullRefreshContainer(
             isRefreshing = uiState.isRefreshing,
-            onRefresh = viewModel::refresh,
+            onRefresh = viewModel::pullToRefresh,
             modifier = Modifier.fillMaxSize()
         ) {
             when {
@@ -122,7 +122,7 @@ fun TalentPoolScreen(
                     uiState.jobSeekers.isEmpty() -> {
                     TalentPoolErrorState(
                         message = uiState.errorMessage.orEmpty(),
-                        onRetry = viewModel::refresh
+                        onRetry = viewModel::retryLoad
                     )
                 }
 
@@ -189,7 +189,7 @@ fun TalentPoolScreen(
                                 }
                             }
 
-                            if (uiState.isRefreshing) {
+                            if (uiState.isReloadingList) {
                                 item {
                                     Box(
                                         modifier = Modifier
@@ -209,7 +209,7 @@ fun TalentPoolScreen(
                                 item {
                                     TalentPoolInlineError(
                                         message = uiState.errorMessage.orEmpty(),
-                                        onRetry = viewModel::refresh
+                                        onRetry = viewModel::retryLoad
                                     )
                                 }
                             } else if (uiState.jobSeekers.isEmpty()) {

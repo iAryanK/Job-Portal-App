@@ -282,7 +282,7 @@ fun MainScaffold(
                             HomeScreen()
                         }
                     }
-                    MainTab.Jobs -> PublicJobsScreen()
+                    MainTab.Jobs -> PublicJobsScreen(onJobClick = onJobClick)
                     MainTab.Applied -> PlaceholderTab(title = "Applied")
                     MainTab.TalentPool -> TalentPoolScreen(
                         onJobSeekerClick = onJobSeekerClick

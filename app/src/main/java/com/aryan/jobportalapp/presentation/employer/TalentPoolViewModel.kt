@@ -21,7 +21,7 @@ class TalentPoolViewModel(
     private var searchJob: Job? = null
 
     init {
-        refresh()
+        reloadList()
     }
 
     fun onSearchQueryChange(query: String) {
@@ -29,17 +29,27 @@ class TalentPoolViewModel(
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(SEARCH_DEBOUNCE_MS)
-            refresh()
+            reloadList()
         }
     }
 
-    fun refresh() {
+    fun pullToRefresh() {
+        if (!uiState.hasLoadedOnce) return
+        reloadList(showPullIndicator = true)
+    }
+
+    fun retryLoad() {
+        reloadList()
+    }
+
+    private fun reloadList(showPullIndicator: Boolean = false) {
         viewModelScope.launch {
             currentPage = 0
             val isInitialLoad = !uiState.hasLoadedOnce
             uiState = uiState.copy(
                 isLoading = isInitialLoad,
-                isRefreshing = !isInitialLoad,
+                isRefreshing = showPullIndicator && !isInitialLoad,
+                isReloadingList = !isInitialLoad && !showPullIndicator,
                 errorMessage = null
             )
             fetchPage(page = 0, append = false)
@@ -47,7 +57,13 @@ class TalentPoolViewModel(
     }
 
     fun loadMore() {
-        if (uiState.isLoading || uiState.isRefreshing || uiState.isLoadingMore || !uiState.hasMore) {
+        if (
+            uiState.isLoading ||
+            uiState.isRefreshing ||
+            uiState.isReloadingList ||
+            uiState.isLoadingMore ||
+            !uiState.hasMore
+        ) {
             return
         }
         viewModelScope.launch {
@@ -58,7 +74,7 @@ class TalentPoolViewModel(
 
     fun toggleQuickFilter(update: TalentPoolFilters.() -> TalentPoolFilters) {
         uiState = uiState.copy(filters = uiState.filters.update())
-        refresh()
+        reloadList()
     }
 
     fun openAdvancedFilters() {
@@ -81,7 +97,7 @@ class TalentPoolViewModel(
             filters = uiState.draftFilters,
             showAdvancedFilters = false
         )
-        refresh()
+        reloadList()
     }
 
     fun clearAdvancedFilters() {
@@ -106,7 +122,7 @@ class TalentPoolViewModel(
             draftFilters = TalentPoolFilters(),
             searchQuery = ""
         )
-        refresh()
+        reloadList()
     }
 
     private suspend fun fetchPage(page: Int, append: Boolean) {
@@ -121,6 +137,7 @@ class TalentPoolViewModel(
                 uiState = uiState.copy(
                     isLoading = false,
                     isRefreshing = false,
+                    isReloadingList = false,
                     isLoadingMore = false,
                     hasLoadedOnce = true,
                     jobSeekers = if (append) {
@@ -137,6 +154,7 @@ class TalentPoolViewModel(
                 uiState = uiState.copy(
                     isLoading = false,
                     isRefreshing = false,
+                    isReloadingList = false,
                     isLoadingMore = false,
                     hasLoadedOnce = true,
                     errorMessage = error.message ?: "Unable to load talent pool"
