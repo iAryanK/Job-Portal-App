@@ -36,7 +36,8 @@ data class ApplicationResponse(
     val message: String? = null,
     val status: ApplicationStatus? = null,
     val job: RecruitmentJobRef? = null,
-    val jobSeeker: RecruitmentJobSeekerRef? = null
+    val jobSeeker: RecruitmentJobSeekerRef? = null,
+    val createdAt: String? = null
 )
 
 data class InvitationResponse(
@@ -63,7 +64,35 @@ data class RecruitApplicationItem(
     val highestQualification: String?,
     val specialization: String?,
     val status: ApplicationStatus,
-    val message: String?
+    val message: String?,
+    val appliedAt: String? = null
+)
+
+data class ApplicationRequest(
+    val job: RecruitmentJobRef,
+    val message: String? = null,
+    val jobSeeker: RecruitmentJobSeekerRef
+)
+
+data class InvitationEmployerRef(
+    val id: String
+)
+
+data class InvitationJobRef(
+    val id: String,
+    val employer: InvitationEmployerRef
+)
+
+data class InvitationRequest(
+    val job: InvitationJobRef,
+    val jobSeeker: RecruitmentJobSeekerRef,
+    val status: InvitationStatus = InvitationStatus.PENDING,
+    val expiresAt: String
+)
+
+data class UpdateApplicationRequest(
+    val newStatus: ApplicationStatus,
+    val remarks: String? = null
 )
 
 data class RecruitInvitationItem(

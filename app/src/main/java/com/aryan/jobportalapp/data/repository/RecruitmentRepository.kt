@@ -3,13 +3,25 @@ package com.aryan.jobportalapp.data.repository
 import com.aryan.jobportalapp.data.remote.NetworkClient
 import com.aryan.jobportalapp.data.remote.RecruitmentApi
 import com.aryan.jobportalapp.data.remote.dto.ApiResponse
+import com.aryan.jobportalapp.data.remote.dto.ApplicationRequest
 import com.aryan.jobportalapp.data.remote.dto.ApplicationResponse
+import com.aryan.jobportalapp.data.remote.dto.ApplicationStatus
+import com.aryan.jobportalapp.data.remote.dto.InvitationEmployerRef
+import com.aryan.jobportalapp.data.remote.dto.InvitationJobRef
+import com.aryan.jobportalapp.data.remote.dto.InvitationRequest
 import com.aryan.jobportalapp.data.remote.dto.InvitationResponse
+import com.aryan.jobportalapp.data.remote.dto.InvitationStatus
+import com.aryan.jobportalapp.data.remote.dto.RecruitmentJobRef
+import com.aryan.jobportalapp.data.remote.dto.RecruitmentJobSeekerRef
 import com.aryan.jobportalapp.data.remote.dto.RecruitApplicationItem
 import com.aryan.jobportalapp.data.remote.dto.RecruitInvitationItem
+import com.aryan.jobportalapp.data.remote.dto.UpdateApplicationRequest
 import com.google.gson.reflect.TypeToken
 import retrofit2.Response
 import java.io.IOException
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class RecruitmentRepository(
     private val recruitmentApi: RecruitmentApi = NetworkClient.recruitmentApi,
@@ -61,6 +73,181 @@ class RecruitmentRepository(
 
     suspend fun getEmployerInvitations(): Result<List<RecruitInvitationItem>> {
         return fetchForEmployerJobs(::fetchInvitationsForJob)
+    }
+
+    suspend fun getApplicationsOfJobSeeker(jobSeekerId: String): Result<List<ApplicationResponse>> {
+        return try {
+            val response = recruitmentApi.getApplicationsOfJobSeeker(jobSeekerId)
+            if (response.isSuccessful) {
+                Result.success(response.body()?.data.orEmpty())
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(exception.message ?: "Unable to load applications")
+            )
+        }
+    }
+
+    suspend fun applyToJob(
+        jobId: String,
+        jobSeekerId: String,
+        message: String? = null
+    ): Result<ApplicationResponse> {
+        return try {
+            val response = recruitmentApi.createApplication(
+                ApplicationRequest(
+                    job = RecruitmentJobRef(id = jobId),
+                    message = message?.takeIf { it.isNotBlank() },
+                    jobSeeker = RecruitmentJobSeekerRef(id = jobSeekerId)
+                )
+            )
+            if (response.isSuccessful) {
+                val application = response.body()?.data
+                if (application != null) {
+                    Result.success(application)
+                } else {
+                    Result.failure(IOException("Application response was empty"))
+                }
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(exception.message ?: "Unable to apply for this job")
+            )
+        }
+    }
+
+    suspend fun updateApplicationStatus(
+        applicationId: String,
+        newStatus: ApplicationStatus,
+        remarks: String? = null
+    ): Result<Unit> {
+        return try {
+            val response = recruitmentApi.updateApplicationStatus(
+                applicationId = applicationId,
+                request = UpdateApplicationRequest(
+                    newStatus = newStatus,
+                    remarks = remarks?.takeIf { it.isNotBlank() }
+                )
+            )
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(exception.message ?: "Unable to update application")
+            )
+        }
+    }
+
+    suspend fun getApplicationsForJobSeekerFromEmployerJobs(
+        jobSeekerId: String,
+        jobIds: List<String>
+    ): Result<List<RecruitApplicationItem>> {
+        if (jobIds.isEmpty()) {
+            return Result.success(emptyList())
+        }
+
+        val applications = mutableListOf<RecruitApplicationItem>()
+        var firstError: Throwable? = null
+
+        for (jobId in jobIds) {
+            fetchApplicationsForJob(jobId, jobTitle = "")
+                .onSuccess { items ->
+                    applications.addAll(items.filter { it.jobSeekerId == jobSeekerId })
+                }
+                .onFailure { error ->
+                    if (firstError == null) {
+                        firstError = error
+                    }
+                }
+        }
+
+        return if (applications.isEmpty() && firstError != null) {
+            Result.failure(firstError!!)
+        } else {
+            Result.success(applications)
+        }
+    }
+
+    suspend fun inviteJobSeeker(
+        jobId: String,
+        employerId: String,
+        jobSeekerId: String,
+        expiresAt: String
+    ): Result<InvitationResponse> {
+        return try {
+            val response = recruitmentApi.createInvitation(
+                InvitationRequest(
+                    job = InvitationJobRef(
+                        id = jobId,
+                        employer = InvitationEmployerRef(id = employerId)
+                    ),
+                    jobSeeker = RecruitmentJobSeekerRef(id = jobSeekerId),
+                    status = InvitationStatus.PENDING,
+                    expiresAt = expiresAt
+                )
+            )
+            if (response.isSuccessful) {
+                val invitation = response.body()?.data
+                if (invitation != null) {
+                    Result.success(invitation)
+                } else {
+                    Result.failure(IOException("Invitation response was empty"))
+                }
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(exception.message ?: "Unable to send invitation")
+            )
+        }
+    }
+
+    suspend fun getActiveInvitedJobIdsForJobSeeker(
+        jobSeekerId: String,
+        jobIds: List<String>
+    ): Result<Set<String>> {
+        if (jobIds.isEmpty()) {
+            return Result.success(emptySet())
+        }
+
+        val activeInvitedJobIds = mutableSetOf<String>()
+        var firstError: Throwable? = null
+
+        for (jobId in jobIds) {
+            try {
+                val response = recruitmentApi.getInvitationsOfJob(jobId)
+                if (response.isSuccessful) {
+                    response.body()?.data.orEmpty()
+                        .filter { invitation ->
+                            invitation.jobSeeker?.id == jobSeekerId &&
+                                isInvitationActive(invitation.expiresAt)
+                        }
+                        .forEach { activeInvitedJobIds.add(jobId) }
+                } else if (firstError == null) {
+                    firstError = IOException(parseErrorMessage(response))
+                }
+            } catch (exception: Exception) {
+                if (firstError == null) {
+                    firstError = IOException(
+                        exception.message ?: "Unable to load invitations"
+                    )
+                }
+            }
+        }
+
+        return if (activeInvitedJobIds.isEmpty() && firstError != null) {
+            Result.failure(firstError!!)
+        } else {
+            Result.success(activeInvitedJobIds)
+        }
     }
 
     private suspend fun <T> fetchForEmployerJobs(
@@ -129,7 +316,8 @@ class RecruitmentRepository(
             highestQualification = seeker.highestQualification,
             specialization = seeker.specialization,
             status = status,
-            message = message
+            message = message,
+            appliedAt = createdAt
         )
     }
 
@@ -159,6 +347,35 @@ class RecruitmentRepository(
             status = status,
             expiresAt = expiresAt
         )
+    }
+
+    private fun isInvitationActive(expiresAt: String?): Boolean {
+        if (expiresAt.isNullOrBlank()) return false
+
+        val expiresAtMillis = parseIsoInstantToEpochMillis(expiresAt) ?: return false
+        return expiresAtMillis > System.currentTimeMillis()
+    }
+
+    private fun parseIsoInstantToEpochMillis(value: String): Long? {
+        val normalized = value.trim().let { iso ->
+            val dotIndex = iso.indexOf('.')
+            if (dotIndex == -1) return@let iso
+
+            val zoneIndex = iso.indexOfAny(charArrayOf('Z', '+', '-'), startIndex = dotIndex + 1)
+            if (zoneIndex == -1) return@let iso
+
+            val fraction = iso.substring(dotIndex + 1, zoneIndex)
+            if (fraction.length <= 3) iso
+            else iso.substring(0, dotIndex + 1) + fraction.take(3) + iso.substring(zoneIndex)
+        }
+
+        listOf("yyyy-MM-dd'T'HH:mm:ss.SSSX", "yyyy-MM-dd'T'HH:mm:ssX").forEach { pattern ->
+            try {
+                return SimpleDateFormat(pattern, Locale.US).parse(normalized)?.time
+            } catch (_: ParseException) {
+            }
+        }
+        return null
     }
 
     private fun <T> parseErrorMessage(response: Response<T>): String {

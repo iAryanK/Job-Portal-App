@@ -1,5 +1,6 @@
 package com.aryan.jobportalapp.presentation.employer
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,8 +31,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,9 +57,16 @@ fun RecruitScreen(
     viewModel: RecruitViewModel = viewModel()
 ) {
     val uiState = viewModel.uiState
+    val context = LocalContext.current
     val selectedTabIndex = when (uiState.selectedTab) {
         RecruitTab.APPLICATIONS -> 0
         RecruitTab.INVITATIONS -> 1
+    }
+
+    LaunchedEffect(uiState.toastMessage) {
+        val message = uiState.toastMessage ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        viewModel.consumeToast()
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -83,11 +93,14 @@ fun RecruitScreen(
                     isRefreshing = uiState.isRefreshingApplications,
                     hasLoaded = uiState.hasLoadedApplications,
                     applications = uiState.applications,
+                    pendingApplicationActions = uiState.pendingApplicationActions,
                     errorMessage = uiState.applicationsError,
                     onRefresh = { viewModel.loadApplications(isRefresh = true) },
                     onRetry = viewModel::loadApplications,
                     onJobSeekerClick = onJobSeekerClick,
-                    onJobClick = onJobClick
+                    onJobClick = onJobClick,
+                    onAcceptApplication = viewModel::acceptApplication,
+                    onRejectApplication = viewModel::rejectApplication
                 )
             }
 
@@ -114,11 +127,14 @@ private fun RecruitApplicationsTab(
     isRefreshing: Boolean,
     hasLoaded: Boolean,
     applications: List<RecruitApplicationItem>,
+    pendingApplicationActions: Map<String, ApplicationPendingAction>,
     errorMessage: String?,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     onJobSeekerClick: (String) -> Unit,
-    onJobClick: (String) -> Unit
+    onJobClick: (String) -> Unit,
+    onAcceptApplication: (String) -> Unit,
+    onRejectApplication: (String) -> Unit
 ) {
     PullRefreshContainer(
         isRefreshing = isRefreshing,
@@ -176,8 +192,11 @@ private fun RecruitApplicationsTab(
                     ) { application ->
                         RecruitApplicationCard(
                             application = application,
+                            pendingAction = pendingApplicationActions[application.applicationId],
                             onJobSeekerClick = { onJobSeekerClick(application.jobSeekerId) },
-                            onJobClick = { onJobClick(application.jobId) }
+                            onJobClick = { onJobClick(application.jobId) },
+                            onAccept = { onAcceptApplication(application.applicationId) },
+                            onReject = { onRejectApplication(application.applicationId) }
                         )
                     }
                 }
@@ -267,8 +286,11 @@ private fun RecruitInvitationsTab(
 @Composable
 private fun RecruitApplicationCard(
     application: RecruitApplicationItem,
+    pendingAction: ApplicationPendingAction?,
     onJobSeekerClick: () -> Unit,
-    onJobClick: () -> Unit
+    onJobClick: () -> Unit,
+    onAccept: () -> Unit,
+    onReject: () -> Unit
 ) {
     RecruitCandidateCard(
         candidateName = application.jobSeekerName,
@@ -282,7 +304,18 @@ private fun RecruitApplicationCard(
         state = application.state,
         country = application.country,
         onJobSeekerClick = onJobSeekerClick,
-        onJobClick = onJobClick
+        onJobClick = onJobClick,
+        actionContent = if (application.status == ApplicationStatus.APPLIED) {
+            {
+                ApplicationActionButtonsRow(
+                    pendingAction = pendingAction,
+                    onAccept = onAccept,
+                    onReject = onReject
+                )
+            }
+        } else {
+            null
+        }
     )
 }
 
@@ -323,7 +356,8 @@ private fun RecruitCandidateCard(
     state: String?,
     country: String?,
     onJobSeekerClick: () -> Unit,
-    onJobClick: () -> Unit
+    onJobClick: () -> Unit,
+    actionContent: (@Composable () -> Unit)? = null
 ) {
     OutlinedCard(
         onClick = onJobSeekerClick,
@@ -450,6 +484,8 @@ private fun RecruitCandidateCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+
+            actionContent?.invoke()
         }
     }
 }

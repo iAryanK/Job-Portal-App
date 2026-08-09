@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aryan.jobportalapp.data.remote.dto.ApplicationStatus
 import com.aryan.jobportalapp.data.remote.dto.RecruitApplicationItem
 import com.aryan.jobportalapp.data.remote.dto.RecruitInvitationItem
 import com.aryan.jobportalapp.data.repository.RecruitmentRepository
@@ -26,7 +27,9 @@ data class RecruitUiState(
     val applications: List<RecruitApplicationItem> = emptyList(),
     val invitations: List<RecruitInvitationItem> = emptyList(),
     val applicationsError: String? = null,
-    val invitationsError: String? = null
+    val invitationsError: String? = null,
+    val pendingApplicationActions: Map<String, ApplicationPendingAction> = emptyMap(),
+    val toastMessage: String? = null
 )
 
 class RecruitViewModel(
@@ -119,6 +122,72 @@ class RecruitViewModel(
                         isRefreshingInvitations = false,
                         hasLoadedInvitations = true,
                         invitationsError = error.message ?: "Unable to load invitations"
+                    )
+                }
+        }
+    }
+
+    fun acceptApplication(applicationId: String) {
+        updateApplicationStatus(
+            applicationId = applicationId,
+            newStatus = ApplicationStatus.SHORTLISTED,
+            remarks = "Application accepted",
+            pendingAction = ApplicationPendingAction.ACCEPT
+        )
+    }
+
+    fun rejectApplication(applicationId: String) {
+        updateApplicationStatus(
+            applicationId = applicationId,
+            newStatus = ApplicationStatus.REJECTED,
+            remarks = "Application rejected",
+            pendingAction = ApplicationPendingAction.REJECT
+        )
+    }
+
+    fun consumeToast() {
+        uiState = uiState.copy(toastMessage = null)
+    }
+
+    private fun updateApplicationStatus(
+        applicationId: String,
+        newStatus: ApplicationStatus,
+        remarks: String,
+        pendingAction: ApplicationPendingAction
+    ) {
+        if (applicationId in uiState.pendingApplicationActions) return
+
+        viewModelScope.launch {
+            uiState = uiState.copy(
+                pendingApplicationActions = uiState.pendingApplicationActions + (applicationId to pendingAction)
+            )
+
+            recruitmentRepository.updateApplicationStatus(
+                applicationId = applicationId,
+                newStatus = newStatus,
+                remarks = remarks
+            )
+                .onSuccess {
+                    uiState = uiState.copy(
+                        pendingApplicationActions = uiState.pendingApplicationActions - applicationId,
+                        applications = uiState.applications.map { application ->
+                            if (application.applicationId == applicationId) {
+                                application.copy(status = newStatus)
+                            } else {
+                                application
+                            }
+                        },
+                        toastMessage = when (newStatus) {
+                            ApplicationStatus.SHORTLISTED -> "Application accepted"
+                            ApplicationStatus.REJECTED -> "Application rejected"
+                            else -> "Application updated"
+                        }
+                    )
+                }
+                .onFailure { error ->
+                    uiState = uiState.copy(
+                        pendingApplicationActions = uiState.pendingApplicationActions - applicationId,
+                        toastMessage = error.message ?: "Unable to update application"
                     )
                 }
         }
