@@ -35,7 +35,7 @@ data class ApplicationResponse(
     val id: String? = null,
     val message: String? = null,
     val status: ApplicationStatus? = null,
-    val job: RecruitmentJobRef? = null,
+    val job: JobSummaryResponse? = null,
     val jobSeeker: RecruitmentJobSeekerRef? = null,
     val createdAt: String? = null
 )
@@ -45,7 +45,7 @@ data class InvitationResponse(
     val status: InvitationStatus? = null,
     val respondedAt: String? = null,
     val expiresAt: String? = null,
-    val job: RecruitmentJobRef? = null,
+    val job: JobSummaryResponse? = null,
     val jobSeeker: RecruitmentJobSeekerRef? = null
 )
 
@@ -111,4 +111,19 @@ data class RecruitInvitationItem(
     val specialization: String?,
     val status: InvitationStatus,
     val expiresAt: String?
+)
+
+data class JobSeekerApplicationItem(
+    val applicationId: String,
+    val status: ApplicationStatus,
+    val message: String?,
+    val job: JobSummaryResponse
+)
+
+data class JobSeekerInvitationItem(
+    val invitationId: String,
+    val status: InvitationStatus,
+    val expiresAt: String?,
+    val respondedAt: String?,
+    val job: JobSummaryResponse
 )

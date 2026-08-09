@@ -45,4 +45,7 @@ interface RecruitmentApi {
     suspend fun createInvitation(
         @Body request: InvitationRequest
     ): Response<ApiResponse<InvitationResponse>>
+
+    @GET("jobs/invitation")
+    suspend fun getInvitationsOfJobSeeker(): Response<ApiResponse<List<InvitationResponse>>>
 }
