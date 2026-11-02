@@ -4,6 +4,7 @@ import com.aryan.jobportalapp.data.remote.dto.ApiResponse
 import com.aryan.jobportalapp.data.remote.dto.ApplicationRequest
 import com.aryan.jobportalapp.data.remote.dto.ApplicationResponse
 import com.aryan.jobportalapp.data.remote.dto.UpdateApplicationRequest
+import com.aryan.jobportalapp.data.remote.dto.UpdateInvitationRequest
 import com.aryan.jobportalapp.data.remote.dto.InvitationRequest
 import com.aryan.jobportalapp.data.remote.dto.InvitationResponse
 import retrofit2.Response
@@ -48,4 +49,10 @@ interface RecruitmentApi {
 
     @GET("jobs/invitation")
     suspend fun getInvitationsOfJobSeeker(): Response<ApiResponse<List<InvitationResponse>>>
+
+    @PATCH("jobs/invitation/{invitationId}")
+    suspend fun updateInvitationStatus(
+        @Path("invitationId") invitationId: String,
+        @Body request: UpdateInvitationRequest
+    ): Response<Unit>
 }

@@ -18,6 +18,7 @@ import com.aryan.jobportalapp.data.remote.dto.RecruitmentJobSeekerRef
 import com.aryan.jobportalapp.data.remote.dto.RecruitApplicationItem
 import com.aryan.jobportalapp.data.remote.dto.RecruitInvitationItem
 import com.aryan.jobportalapp.data.remote.dto.UpdateApplicationRequest
+import com.aryan.jobportalapp.data.remote.dto.UpdateInvitationRequest
 import com.google.gson.reflect.TypeToken
 import retrofit2.Response
 import java.io.IOException
@@ -155,6 +156,27 @@ class RecruitmentRepository(
         } catch (exception: Exception) {
             Result.failure(
                 IOException(exception.message ?: "Unable to apply for this job")
+            )
+        }
+    }
+
+    suspend fun updateInvitationStatus(
+        invitationId: String,
+        status: InvitationStatus
+    ): Result<Unit> {
+        return try {
+            val response = recruitmentApi.updateInvitationStatus(
+                invitationId = invitationId,
+                request = UpdateInvitationRequest(status = status)
+            )
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(IOException(parseErrorMessage(response)))
+            }
+        } catch (exception: Exception) {
+            Result.failure(
+                IOException(exception.message ?: "Unable to update invitation")
             )
         }
     }

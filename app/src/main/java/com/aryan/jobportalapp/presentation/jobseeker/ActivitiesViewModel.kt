@@ -10,6 +10,7 @@ import com.aryan.jobportalapp.data.remote.dto.InvitationStatus
 import com.aryan.jobportalapp.data.remote.dto.JobSeekerApplicationItem
 import com.aryan.jobportalapp.data.remote.dto.JobSeekerInvitationItem
 import com.aryan.jobportalapp.data.repository.RecruitmentRepository
+import com.aryan.jobportalapp.presentation.employer.ApplicationPendingAction
 import kotlinx.coroutines.launch
 
 enum class ActivitiesTab {
@@ -30,7 +31,9 @@ data class ActivitiesUiState(
     val invitations: List<JobSeekerInvitationItem> = emptyList(),
     val invitationStatusFilter: InvitationStatus? = null,
     val applicationsError: String? = null,
-    val invitationsError: String? = null
+    val invitationsError: String? = null,
+    val pendingInvitationActions: Map<String, ApplicationPendingAction> = emptyMap(),
+    val toastMessage: String? = null
 )
 
 class ActivitiesViewModel(
@@ -124,6 +127,68 @@ class ActivitiesViewModel(
                         isRefreshingInvitations = false,
                         hasLoadedInvitations = true,
                         invitationsError = error.message ?: "Unable to load invitations"
+                    )
+                }
+        }
+    }
+
+    fun acceptInvitation(invitationId: String) {
+        updateInvitationStatus(
+            invitationId = invitationId,
+            newStatus = InvitationStatus.ACCEPTED,
+            pendingAction = ApplicationPendingAction.ACCEPT
+        )
+    }
+
+    fun rejectInvitation(invitationId: String) {
+        updateInvitationStatus(
+            invitationId = invitationId,
+            newStatus = InvitationStatus.REJECTED,
+            pendingAction = ApplicationPendingAction.REJECT
+        )
+    }
+
+    fun consumeToast() {
+        uiState = uiState.copy(toastMessage = null)
+    }
+
+    private fun updateInvitationStatus(
+        invitationId: String,
+        newStatus: InvitationStatus,
+        pendingAction: ApplicationPendingAction
+    ) {
+        if (invitationId in uiState.pendingInvitationActions) return
+
+        viewModelScope.launch {
+            uiState = uiState.copy(
+                pendingInvitationActions = uiState.pendingInvitationActions + (invitationId to pendingAction)
+            )
+
+            recruitmentRepository.updateInvitationStatus(
+                invitationId = invitationId,
+                status = newStatus
+            )
+                .onSuccess {
+                    uiState = uiState.copy(
+                        pendingInvitationActions = uiState.pendingInvitationActions - invitationId,
+                        invitations = uiState.invitations.map { invitation ->
+                            if (invitation.invitationId == invitationId) {
+                                invitation.copy(status = newStatus)
+                            } else {
+                                invitation
+                            }
+                        },
+                        toastMessage = when (newStatus) {
+                            InvitationStatus.ACCEPTED -> "Invitation accepted"
+                            InvitationStatus.REJECTED -> "Invitation rejected"
+                            else -> "Invitation updated"
+                        }
+                    )
+                }
+                .onFailure { error ->
+                    uiState = uiState.copy(
+                        pendingInvitationActions = uiState.pendingInvitationActions - invitationId,
+                        toastMessage = error.message ?: "Unable to update invitation"
                     )
                 }
         }

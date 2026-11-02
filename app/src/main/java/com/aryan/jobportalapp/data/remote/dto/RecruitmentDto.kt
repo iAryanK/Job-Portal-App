@@ -95,6 +95,10 @@ data class UpdateApplicationRequest(
     val remarks: String? = null
 )
 
+data class UpdateInvitationRequest(
+    val status: InvitationStatus
+)
+
 data class RecruitInvitationItem(
     val invitationId: String,
     val jobId: String,

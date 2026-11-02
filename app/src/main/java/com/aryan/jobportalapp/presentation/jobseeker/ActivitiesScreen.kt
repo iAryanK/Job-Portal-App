@@ -1,5 +1,6 @@
 package com.aryan.jobportalapp.presentation.jobseeker
 
+import android.widget.Toast
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,12 +34,14 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -51,6 +54,8 @@ import com.aryan.jobportalapp.data.remote.dto.JobSeekerApplicationItem
 import com.aryan.jobportalapp.data.remote.dto.JobSeekerInvitationItem
 import com.aryan.jobportalapp.presentation.common.PullRefreshContainer
 import com.aryan.jobportalapp.presentation.common.enumLabel
+import com.aryan.jobportalapp.presentation.employer.ApplicationActionButtonsRow
+import com.aryan.jobportalapp.presentation.employer.ApplicationPendingAction
 import com.aryan.jobportalapp.presentation.jobs.JobSummaryCard
 import com.aryan.jobportalapp.presentation.jobs.formatDateLabel
 
@@ -62,9 +67,16 @@ fun ActivitiesScreen(
     viewModel: ActivitiesViewModel = viewModel()
 ) {
     val uiState = viewModel.uiState
+    val context = LocalContext.current
     val selectedTabIndex = when (uiState.selectedTab) {
         ActivitiesTab.APPLICATIONS -> 0
         ActivitiesTab.INVITATIONS -> 1
+    }
+
+    LaunchedEffect(uiState.toastMessage) {
+        val message = uiState.toastMessage ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        viewModel.consumeToast()
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -107,10 +119,13 @@ fun ActivitiesScreen(
                     hasLoaded = uiState.hasLoadedInvitations,
                     invitations = uiState.invitations,
                     invitationStatusFilter = uiState.invitationStatusFilter,
+                    pendingInvitationActions = uiState.pendingInvitationActions,
                     errorMessage = uiState.invitationsError,
                     onRefresh = { viewModel.loadInvitations(isRefresh = true) },
                     onRetry = viewModel::loadInvitations,
                     onInvitationStatusFilterSelected = viewModel::onInvitationStatusFilterSelected,
+                    onAcceptInvitation = viewModel::acceptInvitation,
+                    onRejectInvitation = viewModel::rejectInvitation,
                     onJobClick = onJobClick
                 )
             }
@@ -344,10 +359,13 @@ private fun ActivitiesInvitationsTab(
     hasLoaded: Boolean,
     invitations: List<JobSeekerInvitationItem>,
     invitationStatusFilter: InvitationStatus?,
+    pendingInvitationActions: Map<String, ApplicationPendingAction>,
     errorMessage: String?,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     onInvitationStatusFilterSelected: (InvitationStatus?) -> Unit,
+    onAcceptInvitation: (String) -> Unit,
+    onRejectInvitation: (String) -> Unit,
     onJobClick: (String) -> Unit
 ) {
     val filteredInvitations = remember(invitations, invitationStatusFilter) {
@@ -427,9 +445,12 @@ private fun ActivitiesInvitationsTab(
                         ) { invitation ->
                             JobSeekerInvitationCard(
                                 invitation = invitation,
+                                pendingAction = pendingInvitationActions[invitation.invitationId],
                                 onJobClick = {
                                     invitation.job.id?.takeIf { it.isNotBlank() }?.let(onJobClick)
-                                }
+                                },
+                                onAccept = { onAcceptInvitation(invitation.invitationId) },
+                                onReject = { onRejectInvitation(invitation.invitationId) }
                             )
                         }
                     }
@@ -471,7 +492,10 @@ private fun JobSeekerApplicationCard(
 @Composable
 private fun JobSeekerInvitationCard(
     invitation: JobSeekerInvitationItem,
-    onJobClick: () -> Unit
+    pendingAction: ApplicationPendingAction?,
+    onJobClick: () -> Unit,
+    onAccept: () -> Unit,
+    onReject: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         RowWithStatusBadge(
@@ -493,6 +517,14 @@ private fun JobSeekerInvitationCard(
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
             }
+        }
+        if (invitation.status == InvitationStatus.PENDING) {
+            ApplicationActionButtonsRow(
+                pendingAction = pendingAction,
+                onAccept = onAccept,
+                onReject = onReject,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
         }
     }
 }
